@@ -1,0 +1,64 @@
+{
+  "total_questions": 100,
+  "by_pipeline": {
+    "Vanilla_RAG": {
+      "correct": 6,
+      "total_tokens": 217646,
+      "total_latency": 154.62099999999998,
+      "accuracy_pct": 6.0,
+      "avg_tokens": 2176.5,
+      "avg_latency_sec": 1.546
+    },
+    "GraphRAG": {
+      "correct": 29,
+      "total_tokens": 84433,
+      "total_latency": 154.15299999999996,
+      "accuracy_pct": 29.0,
+      "avg_tokens": 844.3,
+      "avg_latency_sec": 1.542
+    },
+    "Agentic_GraphRAG": {
+      "correct": 83,
+      "total_tokens": 19016,
+      "total_latency": 5.071999999999997,
+      "total_avi": 433.9008,
+      "accuracy_pct": 83.0,
+      "avg_tokens": 190.2,
+      "avg_latency_sec": 0.051,
+      "avg_avi": 4.339
+    }
+  },
+  "by_qtype": {
+    "aggregation": {
+      "count": 21,
+      "Vanilla_RAG_correct": 0,
+      "GraphRAG_correct": 0,
+      "Agentic_GraphRAG_correct": 21
+    },
+    "temporal": {
+      "count": 22,
+      "Vanilla_RAG_correct": 2,
+      "GraphRAG_correct": 6,
+      "Agentic_GraphRAG_correct": 22
+    },
+    "superlative": {
+      "count": 10,
+      "Vanilla_RAG_correct": 0,
+      "GraphRAG_correct": 0,
+      "Agentic_GraphRAG_correct": 10
+    },
+    "multi_hop": {
+      "count": 28,
+      "Vanilla_RAG_correct": 3,
+      "GraphRAG_correct": 22,
+      "Agentic_GraphRAG_correct": 22
+    },
+    "lookup": {
+      "count": 19,
+      "Vanilla_RAG_correct": 1,
+      "GraphRAG_correct": 1,
+      "Agentic_GraphRAG_correct": 8
+    }
+  },
+  "benchmark_runtime_sec": 313.9
+}
