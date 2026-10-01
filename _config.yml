@@ -1,0 +1,5 @@
+title: "When Do AI Agents Actually Matter? Benchmarking RAG, GraphRAG, and Agentic GraphRAG with TigerGraph"
+description: "A comprehensive investigation comparing Vanilla RAG, GraphRAG, and Agentic GraphRAG on 150 complex multi-hop, temporal, and aggregation queries. Introducing the Agentic Value Index (AVI) and Epistemic Entropy Reduction to establish an Optimal Stopping Frontier."
+theme: jekyll-theme-cayman
+show_downloads: false
+google_analytics:
