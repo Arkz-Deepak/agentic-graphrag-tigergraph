@@ -32,6 +32,7 @@ tigergraph-graphrag/
 # Temporary / Scratch files
 scratch/
 *.html
+!index.html
 *.log
 drive_data.txt
 corpus_data.json

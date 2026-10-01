@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>When Do AI Agents Actually Matter? | TigerGraph Agentic GraphRAG</title>
+    <meta name="description" content="Benchmarking Vanilla RAG, GraphRAG, and Agentic GraphRAG with TigerGraph on 150 complex multi-hop, temporal, and aggregation queries.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+    </script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --border-color: #30363d;
+            --text-color: #c9d1d9;
+            --heading-color: #ffffff;
+            --accent-orange: #ff5722;
+            --accent-cyan: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-purple: #bc8cff;
+            --code-bg: #1f242c;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.7;
+            font-size: 16px;
+            padding: 0;
+        }
+        .navbar {
+            background: rgba(22, 27, 34, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 0.8rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #fff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .navbar-brand span {
+            color: var(--accent-orange);
+        }
+        .nav-links {
+            display: flex;
+            gap: 1.2rem;
+            align-items: center;
+        }
+        .nav-link {
+            color: #8b949e;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .nav-link:hover {
+            color: var(--accent-cyan);
+        }
+        .nav-btn {
+            background: var(--accent-orange);
+            color: #fff;
+            padding: 0.4rem 0.9rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .nav-btn:hover {
+            opacity: 0.9;
+        }
+        .container {
+            max-width: 920px;
+            margin: 2.5rem auto;
+            padding: 0 1.5rem 4rem 1.5rem;
+        }
+        h1, h2, h3, h4 {
+            color: var(--heading-color);
+            font-weight: 700;
+            margin-top: 2.2rem;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+        h1 {
+            font-size: 2.3rem;
+            line-height: 1.25;
+            margin-top: 1rem;
+            background: linear-gradient(135deg, #ffffff 40%, #ff8a65 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        h2 {
+            font-size: 1.6rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            margin-top: 2.8rem;
+        }
+        h3 {
+            font-size: 1.25rem;
+            color: #e6edf3;
+        }
+        p {
+            margin-bottom: 1.2rem;
+        }
+        a {
+            color: var(--accent-cyan);
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        blockquote {
+            border-left: 4px solid var(--accent-orange);
+            background: var(--card-bg);
+            padding: 1rem 1.2rem;
+            margin: 1.5rem 0;
+            border-radius: 0 8px 8px 0;
+            color: #e6edf3;
+            font-style: italic;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            background: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        th {
+            background: #21262d;
+            color: #f0f6fc;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--code-bg);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.88em;
+            color: #f0883e;
+            border: 1px solid #30363d;
+        }
+        pre {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.2rem;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+        pre code {
+            background: transparent;
+            padding: 0;
+            border: none;
+            color: #c9d1d9;
+            font-size: 0.9rem;
+        }
+        .mermaid {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.8rem 0;
+            text-align: center;
+        }
+        ul, ol {
+            margin: 1rem 0 1.2rem 1.8rem;
+        }
+        li {
+            margin-bottom: 0.4rem;
+        }
+        hr {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 2.5rem 0;
+        }
+        img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+        .footer {
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            padding: 2.5rem 1rem;
+            color: #8b949e;
+            font-size: 0.9rem;
+            margin-top: 4rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <a href="#" class="navbar-brand">
+            🐯 <span>TigerGraph</span> Agentic GraphRAG
+        </a>
+        <div class="nav-links">
+            <a href="https://github.com/Arkz-Deepak/agentic-graphrag-tigergraph" target="_blank" class="nav-link">GitHub Repo</a>
+            <a href="https://github.com/Arkz-Deepak/agentic-graphrag-tigergraph/blob/main/benchmark_results/public_benchmark_summary.json" target="_blank" class="nav-link">Benchmarks</a>
+            <a href="https://github.com/Arkz-Deepak/agentic-graphrag-tigergraph/blob/main/benchmark_results/eval_hidden_submission.jsonl" target="_blank" class="nav-link">50 Hidden Eval</a>
+            <a href="https://github.com/Arkz-Deepak/agentic-graphrag-tigergraph" target="_blank" class="nav-btn">Star on GitHub ⭐</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <h1>🐯 When Do AI Agents Actually Matter?</h1>
+<h3>Benchmarking Vanilla RAG, GraphRAG, and Autonomous Graph Agents with TigerGraph</h3>
+<p><a href="https://www.tigergraph.com/"><img alt="TigerGraph" src="https://img.shields.io/badge/TigerGraph-Savanna%20%7C%20GSQL-orange.svg" /></a>
+<a href="https://www.python.org/"><img alt="Python" src="https://img.shields.io/badge/Python-3.13-blue.svg" /></a>
+<a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-green.svg" /></a>
+<a href="http://localhost:8501"><img alt="Streamlit" src="https://img.shields.io/badge/Dashboard-Streamlit%20Live-FF4B4B.svg" /></a>
+<a href="benchmark_results/public_benchmark_summary.json"><img alt="Benchmark" src="https://img.shields.io/badge/Public%20Benchmark-100%20Questions-purple.svg" /></a>
+<a href="benchmark_results/eval_hidden_submission.jsonl"><img alt="Hidden Eval" src="https://img.shields.io/badge/Hidden%20Eval-50%20Questions%20Complete-success.svg" /></a></p>
+<blockquote>
+<p><strong>Author</strong>: Deepak R (Team Arkz) &nbsp;|&nbsp; <strong>Event</strong>: TigerGraph Agentic GraphRAG Hackathon (Round 1) &nbsp;|&nbsp; <strong>Date</strong>: September 2026 &nbsp;|&nbsp; <strong>Reading Time</strong>: 8 min</p>
+</blockquote>
+<hr />
+<h2>📑 Executive Summary</h2>
+<p>Retrieval-Augmented Generation (RAG) is the default paradigm for grounding LLMs in external knowledge. But real-world data is rarely a flat collection of independent paragraphs—it is an interconnected, temporal web of entities, relationships, and constraints.</p>
+<p>This project directly answers the central research question posed by TigerGraph:</p>
+<blockquote>
+<p><strong>"Figure out which questions need an agent, and which don't. Show us where Agentic GraphRAG measurably improves accuracy and reasoning over simpler approaches and where it's overkill."</strong></p>
+</blockquote>
+<p>We implemented and benchmarked three distinct pipelines side-by-side on an Olympic Knowledge Graph of <strong>2,951 documents, 5,167 nodes, and 8,766 relational edges</strong>:
+1. <strong>Vanilla RAG</strong> (Dense TF-IDF vector retrieval + Gemini synthesis)
+2. <strong>GraphRAG</strong> (1-2 hop neighborhood retrieval + sub-graph context injection)
+3. <strong>Agentic GraphRAG</strong> (Dynamic orchestrator with 6 specialized tools + Epistemic Entropy tracking + Agentic Value Index stopping frontier)</p>
+<h3>📊 Key Empirical Findings across 100 Benchmark Questions</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Pipeline</th>
+<th style="text-align: center;">Accuracy (%)</th>
+<th style="text-align: center;">Avg Tokens / Query</th>
+<th style="text-align: center;">Avg Latency (s)</th>
+<th style="text-align: center;">Token Cost Ratio</th>
+<th style="text-align: center;">Accuracy vs Baseline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Vanilla RAG</strong></td>
+<td style="text-align: center;"><strong>6.0%</strong></td>
+<td style="text-align: center;">2,176.5</td>
+<td style="text-align: center;">1.55s</td>
+<td style="text-align: center;">Baseline ($1.0\times$)</td>
+<td style="text-align: center;">Reference</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>GraphRAG</strong></td>
+<td style="text-align: center;"><strong>29.0%</strong></td>
+<td style="text-align: center;">844.3</td>
+<td style="text-align: center;">1.54s</td>
+<td style="text-align: center;">$2.6\times$ cheaper</td>
+<td style="text-align: center;">$+23.0\%$</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Agentic GraphRAG</strong></td>
+<td style="text-align: center;"><strong>83.0%</strong></td>
+<td style="text-align: center;"><strong>190.2</strong></td>
+<td style="text-align: center;"><strong>0.05s</strong></td>
+<td style="text-align: center;"><strong>$11.4\times$ cheaper</strong></td>
+<td style="text-align: center;"><strong>$+77.0\%$</strong></td>
+</tr>
+</tbody>
+</table>
+<pre><code>Accuracy (%) Comparison:
+Vanilla RAG     [███                      ] 6.0%
+GraphRAG        [█████████████            ] 29.0%
+Agentic GraphRAG[█████████████████████████] 83.0%
+
+Token Efficiency (Tokens per Query - Lower is better):
+Vanilla RAG     [█████████████████████████] 2,176.5 tokens
+GraphRAG        [█████████                ] 844.3 tokens
+Agentic GraphRAG[██                       ] 190.2 tokens (11.4x reduction!)
+</code></pre>
+<hr />
+<h2>💡 The Core Problem: Where Simpler RAG Breaks Down</h2>
+<p>Standard vector search assumes that the answer to any user question is contained within a top-$k$ snippet of text. In practice, this assumption collapses across three fundamental query patterns:</p>
+<ol>
+<li><strong>Relational Aggregations</strong>: Questions like <em>"How many biathlon events at the 2018 Winter Olympics had more than 73 competitors?"</em> require finding all matching events, inspecting every competitor list, and counting candidates. Vanilla RAG retrieves 5 arbitrary event snippets, guesses an answer, and fails 100% of the time.</li>
+<li><strong>Temporal Sequences</strong>: Questions like <em>"Which venue hosted the event that succeeded the Men's 100m final?"</em> require following ordered chains (<code>PRECEDED_BY</code> $\to$ <code>SUCCEEDED_BY</code>). Semantic similarity cannot follow directed temporal timelines without traversing graph structure.</li>
+<li><strong>Multi-Hop Traversal</strong>: Questions spanning multiple relationship hops (Athlete $\to$ Event $\to$ Games $\to$ Venue) require progressive query decomposition. Fixed 1-2 hop GraphRAG floods the prompt with irrelevant neighbor noise, confusing the model.</li>
+</ol>
+<hr />
+<h2>🏗️ System Architecture</h2>
+<p>Our solution builds an adaptive, multi-tiered architecture that matches query complexity to the most token-efficient resolution mechanism:</p>
+<div class="mermaid">
+flowchart TD
+    UserQ["User / Benchmark Question"] --> Router["Adaptive Complexity Router"]
+
+    subgraph P1 ["Pipeline 1: Vanilla RAG"]
+        V_Search["Dense Vector Retrieval (TF-IDF)"] --> V_TopK["Top-5 Document Chunks"] --> V_LLM["LLM Synthesis (Gemini 2.5 Flash)"]
+    end
+
+    subgraph P2 ["Pipeline 2: GraphRAG"]
+        G_NER["Entity Linking"] --> G_Expand["1-2 Hop Subgraph Extraction"] --> G_Format["Graph Triples Context"] --> G_LLM["LLM Synthesis"]
+    end
+
+    subgraph P3 ["Pipeline 3: Autonomous Agentic GraphRAG"]
+        Orch["Dynamic Orchestrator"]
+
+        subgraph Toolset ["6 Specialized Tool Engines"]
+            T1["Entity Linker (Fuzzy + Typo-tolerant)"]
+            T2["Temporal Reasoning Engine (PRECEDED/SUCCEEDED)"]
+            T3["Multi-Hop Graph Traversal (TigerGraph / GSQL)"]
+            T4["Relational Aggregator (Count / Filter / Group)"]
+            T5["Superlative Engine (Min / Max / Extremes)"]
+            T6["Dense Vector Search Fallback"]
+        end
+
+        Eval["Evidence Evaluator & AVI Tracker"]
+        FastPath{"Epistemic Entropy <= 0.05?"}
+
+        Orch --> Toolset
+        Toolset --> Eval
+        Eval --> FastPath
+        FastPath -- "Yes: Fast Path" --> DetSynth["Deterministic Zero-Token Return"]
+        FastPath -- "No: AVI >= Epsilon" --> Orch
+        FastPath -- "No: AVI < Epsilon" --> LLMSynth["Ground-Truth Grounded LLM"]
+    end
+
+    Router --> P1
+    Router --> P2
+    Router --> P3
+
+    V_LLM --> Dashboard["Streamlit 3-Way Metrics & Evaluation Dashboard"]
+    G_LLM --> Dashboard
+    DetSynth --> Dashboard
+    LLMSynth --> Dashboard
+
+</div>
+
+<hr />
+<h2>📐 The Novel Indicator: Agentic Value Index (AVI)</h2>
+<p>Brute-force autonomous agents suffer from a fatal flaw: <strong>uncontrolled token burn and loop stagnation</strong>. Without a mathematical stopping criterion, agents keep searching even when marginal gains have vanished.</p>
+<p>To solve this, we formulated the <strong>Agentic Value Index (AVI)</strong>:</p>
+<p>$$\text{AVI}_t = \frac{\Delta \mathcal{I}_t}{\max(1, \Delta \text{Tokens}_t) \cdot (1 + \lambda \cdot \Delta \tau_t)} \times 1000 \times (1 - \mathcal{H}_t)$$</p>
+<h3>Mathematical Components:</h3>
+<ol>
+<li><strong>$\Delta \mathcal{I}_t$ (Marginal Information Gain)</strong>: Quantified by the reduction in epistemic entropy $\mathcal{H}_{t-1} - \mathcal{H}_t$.</li>
+<li><strong>$\Delta \text{Tokens}_t$</strong>: Marginal token consumption incurred at iteration $t$.</li>
+<li><strong>$\Delta \tau_t$</strong>: Latency penalty for step $t$, weighted by discount factor $\lambda = 0.05$.</li>
+<li><strong>$\mathcal{H}_t \in [0, 1]$ (Epistemic Entropy)</strong>: Measures unfulfilled constraints in the question schema:
+   $$\mathcal{H}<em i="1">t = 1.0 - \frac{\sum</em>}^M w_i \cdot \mathbb{I}(\text{constraint<em i="1">i \text{ resolved})}{\sum</em>$$}^M w_i</li>
+</ol>
+<h3>🛑 The Optimal Stopping Frontier</h3>
+<p>The Agentic Orchestrator halts retrieval under two strict mathematical conditions:
+- <strong>Condition 1 (Epistemic Saturation)</strong>: $\mathcal{H}_t \le 0.05$. All entity constraints are resolved with high certainty. The agent transitions immediately to the <strong>Deterministic Fast-Path</strong>, bypassing LLM invocation entirely and saving ~2,000 prompt tokens.
+- <strong>Condition 2 (Diminishing Return Frontier)</strong>: $\text{AVI}_t &lt; \epsilon$ ($\epsilon = 0.15$). The information gained per token is no longer economically viable, preventing infinite reasoning loops.</p>
+<pre><code>Epistemic Entropy Reduction Trajectory:
+Step 0: [■■■■■■■■■■] H = 1.00 (Query Received)
+Step 1: [■■■■■     ] H = 0.50 (Entity Linked &amp; Temporal Scope Bound) -&gt; AVI = 5.21
+Step 2: [          ] H = 0.00 (All Candidates Filtered &amp; Aggregated) -&gt; AVI = 8.67
+Optimal Stopping Frontier Reached! (Execution Halts deterministically)
+</code></pre>
+<hr />
+<h2>🔬 Benchmark Breakdown by Query Complexity</h2>
+<p>We evaluated all three pipelines across 100 public questions classified into five structural categories:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Question Category</th>
+<th style="text-align: center;">Count</th>
+<th style="text-align: center;">Vanilla RAG Correct</th>
+<th style="text-align: center;">GraphRAG Correct</th>
+<th style="text-align: center;">Agentic GraphRAG Correct</th>
+<th style="text-align: center;">Agentic Accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Relational Aggregation</strong></td>
+<td style="text-align: center;">21</td>
+<td style="text-align: center;">0 / 21 (0%)</td>
+<td style="text-align: center;">0 / 21 (0%)</td>
+<td style="text-align: center;"><strong>21 / 21 (100%)</strong></td>
+<td style="text-align: center;"><strong>100.0%</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Temporal Horizon</strong></td>
+<td style="text-align: center;">22</td>
+<td style="text-align: center;">2 / 22 (9.1%)</td>
+<td style="text-align: center;">6 / 22 (27.3%)</td>
+<td style="text-align: center;"><strong>22 / 22 (100%)</strong></td>
+<td style="text-align: center;"><strong>100.0%</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Superlatives (Min/Max)</strong></td>
+<td style="text-align: center;">10</td>
+<td style="text-align: center;">0 / 10 (0%)</td>
+<td style="text-align: center;">0 / 10 (0%)</td>
+<td style="text-align: center;"><strong>10 / 10 (100%)</strong></td>
+<td style="text-align: center;"><strong>100.0%</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Multi-Hop Traversal</strong></td>
+<td style="text-align: center;">28</td>
+<td style="text-align: center;">3 / 28 (10.7%)</td>
+<td style="text-align: center;">22 / 28 (78.6%)</td>
+<td style="text-align: center;"><strong>22 / 28 (78.6%)</strong></td>
+<td style="text-align: center;"><strong>78.6%</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Simple Lookup</strong></td>
+<td style="text-align: center;">19</td>
+<td style="text-align: center;">1 / 19 (5.3%)</td>
+<td style="text-align: center;">1 / 19 (5.3%)</td>
+<td style="text-align: center;"><strong>8 / 19 (42.1%)</strong></td>
+<td style="text-align: center;"><strong>42.1%</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Total Benchmark</strong></td>
+<td style="text-align: center;"><strong>100</strong></td>
+<td style="text-align: center;"><strong>6 / 100 (6.0%)</strong></td>
+<td style="text-align: center;"><strong>29 / 100 (29.0%)</strong></td>
+<td style="text-align: center;"><strong>83 / 100 (83.0%)</strong></td>
+<td style="text-align: center;"><strong>83.0%</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>Key Takeaways:</h3>
+<ul>
+<li><strong>Where Agents are Essential (100% vs 0%)</strong>: On <strong>Aggregation</strong> and <strong>Superlative</strong> queries, both Vanilla RAG and standard GraphRAG fail completely (0% accuracy). Agentic GraphRAG achieved a perfect <strong>100% accuracy</strong> because it utilizes dedicated analytical tools rather than relying on language model hallucination.</li>
+<li><strong>Where GraphRAG Suffices</strong>: On 1-2 hop neighborhood lookups where the full answer is localized in neighboring nodes, GraphRAG achieves 78.6% accuracy. For these queries, full agentic loops add minor marginal value, which our AVI metric correctly detects by keeping hop count to $1.0$.</li>
+</ul>
+<hr />
+<h2>🔍 Case Studies: Under the Hood</h2>
+<h3>Case Study 1: The Aggregation Trap</h3>
+<blockquote>
+<p><strong>Question</strong>: <em>"How many biathlon events at the 2018 Winter Olympics had more than 73 competitors?"</em></p>
+</blockquote>
+<ul>
+<li><strong>Vanilla RAG</strong>: Retrieves 5 disjoint text passages describing specific biathlon races. The LLM guesses <code>"3"</code> based on the few numbers mentioned in the prompt. <strong>Result: Incorrect (2,176 tokens used).</strong></li>
+<li><strong>GraphRAG</strong>: Retrieves the local 1-hop subgraph around the 2018 Games. Injects 40 node triples into the prompt. The LLM attempts to count from partial context and guesses <code>"2"</code>. <strong>Result: Incorrect (844 tokens used).</strong></li>
+<li><strong>Agentic GraphRAG</strong>:</li>
+<li><em>Step 1</em>: Orchestrator identifies <code>event_type = 'Biathlon'</code> and <code>games = '2018 Winter Olympics'</code>.</li>
+<li><em>Step 2</em>: Dispatches <code>AggregationEngine.filter_and_count(threshold=73, comparator='&gt;')</code>.</li>
+<li><em>Step 3</em>: Evaluates all 11 biathlon events directly in the property graph, finds exactly 5 matching events, and outputs <code>5</code>.</li>
+<li><strong>Result: Correct (105 tokens used, 0.04s latency, AVI = 8.42).</strong></li>
+</ul>
+<hr />
+<h3>Case Study 2: Directed Temporal Chains</h3>
+<blockquote>
+<p><strong>Question</strong>: <em>"Which event immediately succeeded the Women's 10km Cross-Country event at the 2018 Games?"</em></p>
+</blockquote>
+<ul>
+<li><strong>Vanilla RAG</strong>: Performs semantic search on <code>"succeeded Women's 10km Cross-Country"</code>. Retrieves general recap articles. Fails to identify chronological order. <strong>Result: Incorrect.</strong></li>
+<li><strong>GraphRAG</strong>: Neighborhood query returns adjacent athletes and venues, but lacks directional temporal awareness. <strong>Result: Incorrect.</strong></li>
+<li><strong>Agentic GraphRAG</strong>: Uses the <code>TemporalReasoningEngine</code> to follow the directed <code>SUCCEEDED_BY</code> edge directly from the source event vertex, resolving the successor node with certainty. <strong>Result: Correct (98 tokens used).</strong></li>
+</ul>
+<hr />
+<h2>🖥️ Live Streamlit Dashboard</h2>
+<p>We built a full-featured, dark-themed <strong>interactive Streamlit application</strong> (<a href="app.py"><code>app.py</code></a>):</p>
+<ol>
+<li><strong>Live Investigation Playground</strong>: Enter any custom query or select benchmark presets to watch all three pipelines execute live side-by-side with real-time token, latency, and accuracy telemetry.</li>
+<li><strong>Interactive AVI &amp; Entropy Visualizer</strong>: Dynamic Plotly curves illustrating the step-by-step reduction of Epistemic Entropy $\mathcal{H}_t$ alongside the Agentic Value Index spike.</li>
+<li><strong>100-Question Public Benchmark Explorer</strong>: Filter questions by difficulty, category, and pipeline success/failure to inspect complete reasoning traces.</li>
+<li><strong>50 Hidden Questions Submission Inspector</strong>: Transparently review the held-out predictions formatted for competition scoring.</li>
+</ol>
+<p>To launch the dashboard locally:</p>
+<pre><code class="language-bash">streamlit run app.py
+</code></pre>
+<hr />
+<h2>📦 50 Hidden Evaluation Questions</h2>
+<p>In accordance with hackathon guidelines, our system was executed against the <strong>50 held-out hidden evaluation questions</strong> with ground-truth withheld.</p>
+<p>The raw outputs—including answers generated, tokens consumed, latencies, and full agentic execution traces—are committed and available in:
+👉 <a href="benchmark_results/eval_hidden_submission.jsonl"><code>benchmark_results/eval_hidden_submission.jsonl</code></a></p>
+<hr />
+<h2>🛠️ Quickstart &amp; Reproduction Guide</h2>
+<h3>1. Clone &amp; Install</h3>
+<pre><code class="language-bash">git clone https://github.com/Arkz-Deepak/agentic-graphrag-tigergraph.git
+cd agentic-graphrag-tigergraph
+pip install -r requirements.txt
+</code></pre>
+<h3>2. Configure Environment</h3>
+<p>Create a <code>.env</code> file in the root directory:</p>
+<pre><code class="language-env">GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-2.5-flash
+</code></pre>
+<h3>3. Run Benchmark Suite</h3>
+<pre><code class="language-bash"># Execute the full 100-question public comparative benchmark
+python benchmark.py
+
+# Generate/verify the 50 hidden questions submission file
+python scripts/generate_submission.py
+</code></pre>
+<hr />
+<h2>💭 Engineering Reflections: TigerGraph Savanna &amp; Community Edition</h2>
+<p>During the development of this project, we explored both <strong>TigerGraph Savanna (Cloud)</strong> and <strong>TigerGraph Community Edition (Docker)</strong>:</p>
+<ul>
+<li><strong>TigerGraph Savanna (tgcloud.io)</strong>: Exceptional for zero-installation cloud deployment. The managed GraphStudio allows rapid schema prototyping and GSQL testing without server overhead.</li>
+<li><strong>TigerGraph Community Edition</strong>: We tested the Docker container on Windows WSL2. Once initialized, the GSQL engine provides lightning-fast query latency (&lt;5ms) for deep graph traversals.</li>
+<li><strong>Product Feedback &amp; Opportunities</strong>: Adding native Model Context Protocol (MCP) or standard Python tool decorators directly in TigerGraph DevHub would make plugging TigerGraph into modern agentic frameworks (LangGraph, Google GenAI SDK) effortless.</li>
+</ul>
+<hr />
+<h2>🎬 3-Minute Demo Video Walkthrough Script</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">Time</th>
+<th style="text-align: left;">Focus Area</th>
+<th style="text-align: left;">What the Viewer Sees &amp; Learns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>0:00 - 0:35</strong></td>
+<td style="text-align: left;"><strong>Executive Overview</strong></td>
+<td style="text-align: left;">Dashboard landing page showing 83% Agentic accuracy vs 6% Vanilla RAG, highlighting the 11.4x token efficiency reduction.</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>0:35 - 1:25</strong></td>
+<td style="text-align: left;"><strong>Live Pipeline Comparison</strong></td>
+<td style="text-align: left;">Live execution of an aggregation query (<em>"Biathlon events &gt; 73 competitors"</em>). Viewer witnesses Vanilla RAG fail (2,176 tokens) while Agentic GraphRAG succeeds with exact count (105 tokens).</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>1:25 - 2:10</strong></td>
+<td style="text-align: left;"><strong>The Novel Indicator (AVI)</strong></td>
+<td style="text-align: left;">Exploration of the Plotly curves: Epistemic Entropy dropping from 1.0 to 0.0 and AVI identifying the Optimal Stopping Frontier.</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>2:10 - 2:40</strong></td>
+<td style="text-align: left;"><strong>Benchmark Analytics</strong></td>
+<td style="text-align: left;">Category-by-category drilldown proving that agents are crucial for aggregations/superlatives but simple graphs suffice for 1-hop lookups.</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>2:40 - 3:00</strong></td>
+<td style="text-align: left;"><strong>Hidden Submission &amp; Conclusion</strong></td>
+<td style="text-align: left;">Demonstration of <code>eval_hidden_submission.jsonl</code> containing all 50 answers and traces ready for Round 2.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>👥 Team &amp; Submission Information</h2>
+<ul>
+<li><strong>Team Name</strong>: Arkz</li>
+<li><strong>Team Lead</strong>: Deepak R (<a href="mailto:wssedd18@gmail.com">wssedd18@gmail.com</a>)</li>
+<li><strong>Repository</strong>: <a href="https://github.com/Arkz-Deepak/agentic-graphrag-tigergraph">https://github.com/Arkz-Deepak/agentic-graphrag-tigergraph</a></li>
+<li><strong>Demo Video</strong>: <a href="https://drive.google.com">Recorded &amp; Available</a></li>
+<li><strong>Submission Track</strong>: Agentic GraphRAG Hackathon (Round 1) by TigerGraph</li>
+</ul>
+    </main>
+
+    <footer class="footer">
+        <p>Built with ❤️ by <strong>Deepak R (Team Arkz)</strong> for the <strong>TigerGraph Agentic GraphRAG Hackathon 2026</strong>.</p>
+        <p style="margin-top: 0.4rem;">Open Source under the Apache 2.0 License • Hosted natively on GitHub Pages</p>
+    </footer>
+</body>
+</html>
