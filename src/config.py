@@ -17,8 +17,22 @@ class Config:
     RESULTS_DIR = PROJECT_ROOT / "benchmark_results"
 
     # LLM Settings
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or os.getenv("GOOGLE_GENAI_API_KEY") or ""
-    GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    _st_secrets = {}
+    try:
+        import streamlit as _st
+        _st_secrets = _st.secrets
+    except Exception:
+        pass
+
+    GEMINI_API_KEY = (
+        os.getenv("GEMINI_API_KEY") 
+        or os.getenv("GOOGLE_API_KEY") 
+        or os.getenv("GOOGLE_GENAI_API_KEY") 
+        or _st_secrets.get("GEMINI_API_KEY", "") 
+        or _st_secrets.get("GOOGLE_API_KEY", "")
+        or ""
+    )
+    GEMINI_MODEL = os.getenv("GEMINI_MODEL") or _st_secrets.get("GEMINI_MODEL", "gemini-2.5-flash")
 
     # TigerGraph Settings
     TIGERGRAPH_HOST = os.getenv("TIGERGRAPH_HOST", "")
